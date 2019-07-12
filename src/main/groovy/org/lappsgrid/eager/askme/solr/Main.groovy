@@ -38,12 +38,14 @@ class Main extends MessageBox{
 
 
 
-
     }
 
-    //Want to return a document list, but can't find nlp import - need to add to pom and reinstall
+    //Want to return a document list then serialize, but can't find nlp import - need to add to pom and reinstall
     String processSolr(SolrDocumentList sdl) {
         //DocumentProcessor d = new DocumentProcessor
+        //List docs = d.process(documents)
+        //put docs into something that can be serialized into json
+        //return docs
         return sdl.toString()
     }
 
