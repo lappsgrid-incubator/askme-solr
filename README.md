@@ -1,0 +1,3 @@
+# askme-solr
+
+Solr service
