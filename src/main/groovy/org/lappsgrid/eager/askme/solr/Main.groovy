@@ -1,6 +1,6 @@
 package org.lappsgrid.eager.askme.solr
 
-import com.sun.xml.internal.org.jvnet.fastinfoset.sax.ExtendedContentHandler
+import org.apache.solr.common.SolrDocumentList
 import org.lappsgrid.eager.mining.api.Query
 import org.lappsgrid.rabbitmq.Message
 import org.lappsgrid.rabbitmq.topic.MessageBox
@@ -28,12 +28,28 @@ class Main extends MessageBox{
 
     void recv(Message message){
         Query query = Serializer.parse(Serializer.toJson(message.body), Query)
+        logger.info("Received message, query is: {}",query)
         GetSolrDocuments process = new GetSolrDocuments()
-        message.body = process.answer(query)
+        logger.info("Gathering solr documents")
+        SolrDocumentList documents = process.answer(query)
+        String result = processSolr(documents)
+        message.setBody(result)
+        logger.info("Processed query, sending documents back to web")
+
 
 
 
     }
+
+    //Want to return a document list, but can't find nlp import - need to add to pom and reinstall
+    String processSolr(SolrDocumentList sdl) {
+        //DocumentProcessor d = new DocumentProcessor
+        return sdl.toString()
+    }
+
+
+
+
     
     static void main(String[] args) {
         new Main()
