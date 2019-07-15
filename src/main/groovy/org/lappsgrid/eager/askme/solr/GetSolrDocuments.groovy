@@ -46,9 +46,9 @@ class GetSolrDocuments {
 
         int n = documents.size()
         logger.trace("Received {} documents", n)
-        Map result = [:]
-        result.query = query
-        result.size = n
+        //Map result = [:]
+        //result.query = query
+        //result.size = n
         return documents
     }
 

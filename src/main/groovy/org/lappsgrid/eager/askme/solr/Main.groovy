@@ -20,7 +20,7 @@ class Main extends MessageBox{
     static final String WEB_MBOX = 'web'
     static final String HOST = "rabbitmq.lappsgrid.org"
     static final String EXCHANGE = "org.lappsgrid.query"
-
+    PostOffice po = new PostOffice(EXCHANGE, HOST)
     Main(){
         super(EXCHANGE, BOX)
     }
@@ -35,8 +35,9 @@ class Main extends MessageBox{
         String result = processSolr(documents)
         message.setBody(result)
         logger.info("Processed query, sending documents back to web")
-
-
+        message.setRoute(['web.mailbox'])
+        message.setCommand('solr')
+        po.send(message)
 
     }
 
