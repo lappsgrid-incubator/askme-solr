@@ -7,18 +7,20 @@ import org.apache.solr.client.solrj.SolrResponse
 import org.apache.solr.client.solrj.SolrServerException
 import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.response.QueryResponse
+import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrDocumentList
 import org.apache.solr.common.params.MapSolrParams
 import org.apache.solr.common.params.SolrParams
 import org.apache.solr.common.util.NamedList
 import org.lappsgrid.eager.mining.api.Query
-//import org.springframework.core.env.Environment
+
+
 
 @Slf4j("logger")
 class GetSolrDocuments {
 
     //DOES THIS NEED TO BE PRIVATE
-    SolrDocumentList answer(Query query) {
+    Map answer(Query query) {
 
         //init()
         logger.debug("Generating answer.")
@@ -46,10 +48,12 @@ class GetSolrDocuments {
 
         int n = documents.size()
         logger.trace("Received {} documents", n)
-        //Map result = [:]
-        //result.query = query
-        //result.size = n
-        return documents
+        Map result = [:]
+        result.query = query
+        result.size = n
+        result.documents = documents
+
+        return result
     }
 
 }

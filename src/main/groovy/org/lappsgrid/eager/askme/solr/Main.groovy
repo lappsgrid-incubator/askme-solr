@@ -31,8 +31,7 @@ class Main extends MessageBox{
         logger.info("Received message, query is: {}",query)
         GetSolrDocuments process = new GetSolrDocuments()
         logger.info("Gathering solr documents")
-        SolrDocumentList documents = process.answer(query)
-        String result = processSolr(documents)
+        Map result = process.answer(query)
         message.setBody(result)
         logger.info("Processed query, sending documents back to web")
         message.setRoute([WEB_MBOX])
@@ -41,16 +40,19 @@ class Main extends MessageBox{
 
     }
 
+    /**
+
     //Want to return a document list then serialize, but can't find nlp import - need to add to pom and reinstall
     String processSolr(SolrDocumentList sdl) {
         //DocumentProcessor d = new DocumentProcessor
         //List docs = d.process(documents)
         //put docs into something that can be serialized into json
         //return docs
-        return sdl.toString()
+        return Serializer.toPrettyJson(sdl)
+        //return sdl.toString()
     }
 
-
+    **/
 
 
     
