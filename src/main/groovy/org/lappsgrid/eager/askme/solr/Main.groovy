@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 @Slf4j("logger")
 class Main extends MessageBox{
     static final String BOX = 'solr.mailbox'
-    static final String WEB_MBOX = 'web'
+    static final String WEB_MBOX = 'web.mailbox'
     static final String HOST = "rabbitmq.lappsgrid.org"
     static final String EXCHANGE = "org.lappsgrid.query"
     PostOffice po = new PostOffice(EXCHANGE, HOST)
@@ -35,7 +35,7 @@ class Main extends MessageBox{
         String result = processSolr(documents)
         message.setBody(result)
         logger.info("Processed query, sending documents back to web")
-        message.setRoute(['web.mailbox'])
+        message.setRoute([WEB_MBOX])
         message.setCommand('solr')
         po.send(message)
 
