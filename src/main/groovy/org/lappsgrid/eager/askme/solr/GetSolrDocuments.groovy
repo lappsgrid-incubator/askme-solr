@@ -23,11 +23,9 @@ class GetSolrDocuments {
     Map answer(Query query) {
 
         //init()
-        logger.debug("Generating answer.")
+        logger.info("Generating answer.")
 
-        logger.trace("Creating CloudSolrClient")
-        //SolrClient solr = new CloudSolrClient.Builder([config.solr.host]).build()
-        //SolrClient solr = new CloudSolrClient.Builder(["http://solr1.lappsgrid.org:8983/solr"]).build()
+        logger.info("Creating CloudSolrClient")
 
         SolrClient solr = new CloudSolrClient.Builder(["http://129.114.16.34:8983/solr"]).build()
 
@@ -37,7 +35,7 @@ class GetSolrDocuments {
         Map solrParams = [:]
         solrParams.q = query.query
         solrParams.fl = 'pmid,pmc,doi,year,title,path,abstract,body'
-        solrParams.rows = 5000
+        solrParams.rows = 1
 
         MapSolrParams queryParams = new MapSolrParams(solrParams)
         String collection = 'bioqa'
@@ -46,12 +44,15 @@ class GetSolrDocuments {
         final QueryResponse response = solr.query(collection, queryParams)
         final SolrDocumentList documents = response.getResults()
 
+        //need to go from SolrDocumentList to list of documents so that ranking can cast back
+
         int n = documents.size()
         logger.trace("Received {} documents", n)
         Map result = [:]
         result.query = query
         result.size = n
         result.documents = documents
+        logger.info('Result: {}', result.documents)
 
         return result
     }
