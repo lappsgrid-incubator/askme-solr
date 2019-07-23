@@ -43,9 +43,6 @@ class GetSolrDocuments {
         logger.trace("Sending query to Solr")
         final QueryResponse response = solr.query(collection, queryParams)
         final SolrDocumentList documents = response.getResults()
-
-        //need to go from SolrDocumentList to list of documents so that ranking can cast back
-
         int n = documents.size()
         logger.trace("Received {} documents", n)
         Map result = [:]
