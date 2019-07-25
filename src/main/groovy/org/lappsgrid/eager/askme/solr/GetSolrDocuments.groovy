@@ -18,7 +18,7 @@ class GetSolrDocuments {
      * fl -------------> fields saved from each document in the solr query
      */
 
-    final Integer rows = 1
+    final Integer rows = 3
     final String solr_address = "http://129.114.16.34:8983/solr"
     final String collection = 'bioqa'
     final String fl = 'pmid,pmc,doi,year,title,path,abstract,body'
