@@ -12,19 +12,19 @@ import org.lappsgrid.eager.mining.api.Query
 class GetSolrDocuments {
 
     /**
-     * rows -----------> number of solr documents returned
+     * rows -----------> default number of solr documents returned
      * solr_address ---> web address to solr database
      * collection -----> the specific database accessed
      * fl -------------> fields saved from each document in the solr query
      */
 
-    final Integer rows = 1
+    Integer rows = 10
     final String solr_address = "http://129.114.16.34:8983/solr"
     final String collection = 'bioqa'
     final String fl = 'id,pmid,pmc,doi,year,title,path,abstract,body'
 
 
-    Map answer(Query query, String id) {
+    Map answer(Query query, String id, int number_of_documents) {
 
         logger.info("Generating answer for Message {}", id)
         logger.info("Creating CloudSolrClient")
@@ -34,6 +34,7 @@ class GetSolrDocuments {
         Map solrParams = [:]
         solrParams.q = query.query
         solrParams.fl = fl
+        rows = number_of_documents
         solrParams.rows = rows
         MapSolrParams queryParams = new MapSolrParams(solrParams)
 

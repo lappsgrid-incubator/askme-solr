@@ -28,7 +28,10 @@ class Main extends MessageBox{
 
         logger.info("Gathering solr documents")
         GetSolrDocuments process = new GetSolrDocuments()
-        Map result = process.answer(query, message.getId())
+
+        int number_of_documents = message.getCommand().toInteger()
+
+        Map result = process.answer(query, message.getId(),number_of_documents)
         message.setBody(result)
 
         logger.info("Processed query from Message {}, sending documents back to web", message.getId())
