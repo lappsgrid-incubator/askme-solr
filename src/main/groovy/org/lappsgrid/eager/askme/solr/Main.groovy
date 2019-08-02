@@ -38,6 +38,7 @@ class Main extends MessageBox{
         message.setRoute([WEB_MBOX])
         message.setCommand('solr')
         po.send(message)
+
         logger.info("Message {} with solr documents sent back to web", message.getId())
 
     }
