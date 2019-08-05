@@ -1,4 +1,4 @@
-package org.lappsgrid.eager.askme.solr
+package org.lappsgrid.askme.solr
 
 import groovy.util.logging.Slf4j
 import org.apache.solr.client.solrj.SolrClient
@@ -51,7 +51,6 @@ class GetSolrDocuments {
         result.size = n
         result.documents = documents
         solr.close()
-
         return result
     }
 }

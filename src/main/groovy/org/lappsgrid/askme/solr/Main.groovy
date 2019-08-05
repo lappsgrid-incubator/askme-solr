@@ -1,4 +1,4 @@
-package org.lappsgrid.eager.askme.solr
+package org.lappsgrid.askme.solr
 
 import org.lappsgrid.eager.mining.api.Query
 
