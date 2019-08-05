@@ -6,6 +6,8 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.response.QueryResponse
 import org.apache.solr.common.SolrDocumentList
 import org.apache.solr.common.params.MapSolrParams
+
+
 import org.lappsgrid.eager.mining.api.Query
 
 @Slf4j("logger")
