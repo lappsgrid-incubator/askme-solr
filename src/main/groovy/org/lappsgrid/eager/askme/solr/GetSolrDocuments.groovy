@@ -50,6 +50,7 @@ class GetSolrDocuments {
         result.query = query
         result.size = n
         result.documents = documents
+        solr.close()
 
         return result
     }

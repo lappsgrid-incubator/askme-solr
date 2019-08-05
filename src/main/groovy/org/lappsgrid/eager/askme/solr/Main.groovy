@@ -24,26 +24,38 @@ class Main extends MessageBox{
     }
 
     void recv(Message message){
-        logger.info("Received message {}", message.getId())
 
-        logger.info("Generating query from Message {}", message.getId())
-        Query query = Serializer.parse(Serializer.toJson(message.body), Query)
+        if(message.getBody() == 'EXIT'){
+            shutdown()
+        }
+        else {
+            logger.info("Received message {}", message.getId())
 
-        logger.info("Gathering solr documents")
-        GetSolrDocuments process = new GetSolrDocuments()
+            logger.info("Generating query from Message {}", message.getId())
+            Query query = Serializer.parse(Serializer.toJson(message.body), Query)
 
-        int number_of_documents = message.getCommand().toInteger()
+            logger.info("Gathering solr documents")
+            GetSolrDocuments process = new GetSolrDocuments()
 
-        Map result = process.answer(query, message.getId(),number_of_documents)
-        message.setBody(result)
+            int number_of_documents = message.getCommand().toInteger()
 
-        logger.info("Processed query from Message {}, sending documents back to web", message.getId())
-        message.setRoute([WEB_MBOX])
-        message.setCommand('solr')
-        po.send(message)
+            Map result = process.answer(query, message.getId(), number_of_documents)
+            message.setBody(result)
 
-        logger.info("Message {} with solr documents sent back to web", message.getId())
+            logger.info("Processed query from Message {}, sending documents back to web", message.getId())
+            message.setRoute([WEB_MBOX])
+            message.setCommand('solr')
+            po.send(message)
 
+            logger.info("Message {} with solr documents sent back to web", message.getId())
+        }
+
+    }
+    void shutdown(){
+        logger.info('Received shutdown message, terminating askme-solr')
+        po.close()
+        logger.info('askme-solr terminated')
+        System.exit(0)
     }
     
     static void main(String[] args) {
