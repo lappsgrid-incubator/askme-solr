@@ -23,7 +23,7 @@
 
 
     <build>
-        <finalName>solr</finalName>
+        <finalName>askme-solr</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
