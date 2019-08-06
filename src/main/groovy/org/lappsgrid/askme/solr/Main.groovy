@@ -25,7 +25,7 @@ class Main extends MessageBox{
 
     void recv(Message message){
 
-        if(message.getBody() == 'EXIT'){
+        if(message.getCommand() == 'EXIT' || message.getCommand() == 'STOP'){
             shutdown()
         }
         else {
@@ -52,9 +52,9 @@ class Main extends MessageBox{
 
     }
     void shutdown(){
-        logger.info('Received shutdown message, terminating askme-solr')
+        logger.info('Received shutdown message, terminating Solr service')
         po.close()
-        logger.info('askme-solr terminated')
+        logger.info('Solr service terminated')
         System.exit(0)
     }
     
