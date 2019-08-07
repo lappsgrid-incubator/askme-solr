@@ -20,7 +20,7 @@ class GetSolrDocuments {
      * fl -------------> fields saved from each document in the solr query
      */
 
-    Integer rows = 10
+    int rows = 10
     final String solr_address = "http://129.114.16.34:8983/solr"
     final String collection = 'bioqa'
     final String fl = 'id,pmid,pmc,doi,year,title,path,abstract,body'
@@ -36,7 +36,9 @@ class GetSolrDocuments {
         Map solrParams = [:]
         solrParams.q = query.query
         solrParams.fl = fl
-        rows = number_of_documents
+        if(number_of_documents){
+            rows = number_of_documents
+        }
         solrParams.rows = rows
         MapSolrParams queryParams = new MapSolrParams(solrParams)
 

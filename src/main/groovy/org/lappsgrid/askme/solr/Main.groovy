@@ -24,12 +24,11 @@ class Main extends MessageBox{
     }
 
     void recv(Message message){
-
+        logger.info("Received message {}", message.getId())
         if(message.getCommand() == 'EXIT' || message.getCommand() == 'STOP'){
             shutdown()
         }
-        else {
-            logger.info("Received message {}", message.getId())
+        if(checkMessage(message)){
 
             logger.info("Generating query from Message {}", message.getId())
             Query query = Serializer.parse(Serializer.toJson(message.body), Query)
@@ -49,6 +48,9 @@ class Main extends MessageBox{
 
             logger.info("Message {} with solr documents sent back to web", message.getId())
         }
+        else {
+            logger.info("Message {} terminated", message.getId())
+        }
 
     }
     void shutdown(){
@@ -57,9 +59,36 @@ class Main extends MessageBox{
         logger.info('Solr service terminated')
         System.exit(0)
     }
+
+    //Checks if:
+    // 1) message body is empty
+    // 2) command is empty (as of right now, default is 10)
+    // TODO: check body to see it matches query format
+    boolean checkMessage(Message message) {
+        if (!(message.getBody())) {
+            Map error_check = [:]
+            error_check.origin = "Solr"
+            error_check.messageId = message.getId()
+            if (message.getBody() == '') {
+                logger.info('ERROR: Message has empty body')
+                error_check.body = 'MISSING'
+            }
+            logger.info('Notifying Web service of error')
+            Message error_message = new Message()
+            error_message.setCommand('ERROR')
+            error_message.setBody(error_check)
+            error_message.route('web.mailbox')
+            po.send(error_message)
+            return false
+        }
+        if(message.getCommand() == ''){
+            logger.info("WARNING: No value set for number of documents. Default is 10")
+        }
+        return true
+    }
     
     static void main(String[] args) {
-        logger.info("Starting solr access module, awaiting message from web module")
+        logger.info("Starting Solr service, awaiting Message containing query from Web module")
         new Main()
     }
 }
