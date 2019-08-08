@@ -62,14 +62,14 @@ class Main extends MessageBox{
 
     //Checks if:
     // 1) message body is empty
-    // 2) command is empty (as of right now, default is 10)
+    // 2) command is empty (as of right now, default is 10) THIS IS NOW DONE IN WEB
     // TODO: check body to see it matches query format
     boolean checkMessage(Message message) {
         if (!(message.getBody())) {
             Map error_check = [:]
             error_check.origin = "Solr"
             error_check.messageId = message.getId()
-            if (message.getBody() == '') {
+            if (!message.getBody()) {
                 logger.info('ERROR: Message has empty body')
                 error_check.body = 'MISSING'
             }
@@ -80,9 +80,6 @@ class Main extends MessageBox{
             error_message.route('web.mailbox')
             po.send(error_message)
             return false
-        }
-        if(message.getCommand() == ''){
-            logger.info("WARNING: No value set for number of documents. Default is 10")
         }
         return true
     }
