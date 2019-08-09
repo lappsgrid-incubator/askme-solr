@@ -1,6 +1,7 @@
 package org.lappsgrid.askme.solr
 
 import org.lappsgrid.eager.mining.api.Query
+import org.lappsgrid.rabbitmq.topic.MailBox
 
 //import org.lappsgrid.eager.mining.core.json.Serializer
 import org.lappsgrid.serialization.Serializer
@@ -12,52 +13,59 @@ import groovy.util.logging.Slf4j
 
 
 @Slf4j("logger")
-class Main extends MessageBox{
+class Main{
     static final String MBOX = 'solr.mailbox'
     static final String WEB_MBOX = 'web.mailbox'
     static final String HOST = "rabbitmq.lappsgrid.org"
     static final String EXCHANGE = "org.lappsgrid.query"
     static final PostOffice po = new PostOffice(EXCHANGE, HOST)
+    MailBox box
 
-    Main(){
-        super(EXCHANGE, MBOX)
+    Main() {
+        //super(EXCHANGE, MBOX)
     }
 
-    void recv(Message message){
-        logger.info("Received message {}", message.getId())
-        if(message.getCommand() == 'EXIT' || message.getCommand() == 'STOP'){
-            shutdown()
+    void run(lock) {
+        box = new MailBox(EXCHANGE, MBOX, HOST) {
+            @Override
+            void recv(String s) {
+                Message message = Serializer.parse(s, Message)
+                logger.info("Received message {}", message.getId())
+                if (message.getCommand() == 'EXIT' || message.getCommand() == 'STOP') {
+                    shutdown(lock)
+                }
+                else {
+                    logger.info("Generating query from Message {}", message.getId())
+                    Query query = Serializer.parse(Serializer.toJson(message.body), Query)
+
+                    logger.info("Gathering solr documents")
+                    GetSolrDocuments process = new GetSolrDocuments()
+
+                    int number_of_documents = message.getCommand().toInteger()
+
+                    Map result = process.answer(query, message.getId(), number_of_documents)
+                    message.setBody(result)
+
+                    logger.info("Processed query from Message {}, sending documents back to web", message.getId())
+                    message.setRoute([WEB_MBOX])
+                    message.setCommand('solr')
+                    po.send(message)
+
+                    logger.info("Message {} with solr documents sent back to web", message.getId())
+                }
+
+            }
         }
-        if(checkMessage(message)){
-
-            logger.info("Generating query from Message {}", message.getId())
-            Query query = Serializer.parse(Serializer.toJson(message.body), Query)
-
-            logger.info("Gathering solr documents")
-            GetSolrDocuments process = new GetSolrDocuments()
-
-            int number_of_documents = message.getCommand().toInteger()
-
-            Map result = process.answer(query, message.getId(), number_of_documents)
-            message.setBody(result)
-
-            logger.info("Processed query from Message {}, sending documents back to web", message.getId())
-            message.setRoute([WEB_MBOX])
-            message.setCommand('solr')
-            po.send(message)
-
-            logger.info("Message {} with solr documents sent back to web", message.getId())
-        }
-        else {
-            logger.info("Message {} terminated", message.getId())
-        }
-
-    }
-    void shutdown(){
-        logger.info('Received shutdown message, terminating Solr service')
+        synchronized(lock) { lock.wait() }
+        box.close()
         po.close()
-        logger.info('Solr service terminated')
-        System.exit(0)
+        logger.info("Solr service terminated")
+    }
+
+    void shutdown(Object lock){
+        logger.info('Received shutdown message, terminating Solr service')
+        synchronized(lock) { lock.notify() }
+
     }
 
     //Checks if:
@@ -86,6 +94,9 @@ class Main extends MessageBox{
     
     static void main(String[] args) {
         logger.info("Starting Solr service, awaiting Message containing query from Web module")
-        new Main()
+        Object lock = new Object()
+        Thread.start {
+            new Main().run(lock)
+        }
     }
 }
