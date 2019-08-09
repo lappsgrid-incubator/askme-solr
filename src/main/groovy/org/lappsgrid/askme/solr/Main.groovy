@@ -71,7 +71,7 @@ class Main{
     //Checks if:
     // 1) message body is empty
     // 2) command is empty (as of right now, default is 10) THIS IS NOW DONE IN WEB
-    // TODO: check body to see it matches query format
+    // TODO: fix and integrate with new run and recv message
     boolean checkMessage(Message message) {
         if (!(message.getBody())) {
             Map error_check = [:]
