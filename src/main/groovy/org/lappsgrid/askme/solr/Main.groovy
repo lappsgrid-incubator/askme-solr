@@ -30,28 +30,37 @@ class Main{
             @Override
             void recv(String s) {
                 Message message = Serializer.parse(s, Message)
-                logger.info("Received message {}", message.getId())
-                if (message.getCommand() == 'EXIT' || message.getCommand() == 'STOP') {
+                String command = message.getCommand()
+                String id = message.getId()
+                Object params = message.getParameters()
+
+                logger.info("Received message {}", id)
+                if (command == 'EXIT' || command == 'STOP') {
                     shutdown(lock)
                 }
                 else {
-                    logger.info("Generating query from Message {}", message.getId())
+                    logger.info("Generating query from Message {}", id)
                     Query query = Serializer.parse(Serializer.toJson(message.body), Query)
 
                     logger.info("Gathering solr documents")
                     GetSolrDocuments process = new GetSolrDocuments()
 
-                    int number_of_documents = message.getCommand().toInteger()
+                    int number_of_documents = command.toInteger()
 
-                    Map result = process.answer(query, message.getId(), number_of_documents)
-                    message.setBody(result)
+                    Map result = process.answer(query, id, number_of_documents)
+                    //message.setBody(result)
 
-                    logger.info("Processed query from Message {}, sending documents back to web", message.getId())
-                    message.setRoute([WEB_MBOX])
-                    message.setCommand('solr')
-                    po.send(message)
+                    logger.info("Processed query from Message {}, sending documents back to web",id)
+                    Message response = new Message()
+                    response.setCommand('solr')
+                    response.setRoute([WEB_MBOX])
+                    response.setBody(result)
+                    response.setId(id)
+                    response.setParameters(params)
 
-                    logger.info("Message {} with solr documents sent back to web", message.getId())
+                    po.send(response)
+
+                    logger.info("Message {} with solr documents sent back to web", id)
                 }
 
             }
