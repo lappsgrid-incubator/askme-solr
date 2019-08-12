@@ -42,8 +42,9 @@ class Main{
                 }
                 else if(command == 'PING') {
                     String origin = message.getBody()
-                    logger.info('Received PING message from {}', origin)
+                    logger.info('Received PING message from and sending response to {}', origin)
                     Message response = new Message()
+                    response.setBody(MBOX)
                     response.setCommand('PONG')
                     response.setRoute([origin])
                     po.send(response)
