@@ -35,8 +35,10 @@ class Main{
                 Object params = message.getParameters()
 
                 logger.info("Received message {}", id)
+
                 if (command == 'EXIT' || command == 'STOP') {
-                    shutdown(lock)
+                    logger.info('Received shutdown message, terminating Solr service')
+                    synchronized(lock) { lock.notify() }
                 }
                 else {
                     logger.info("Generating query from Message {}", id)
@@ -66,8 +68,8 @@ class Main{
             }
         }
         synchronized(lock) { lock.wait() }
-        box.close()
         po.close()
+        box.close()
         logger.info("Solr service terminated")
     }
 
