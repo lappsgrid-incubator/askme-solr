@@ -34,14 +34,22 @@ class Main{
                 String id = message.getId()
                 Object params = message.getParameters()
 
-                logger.info("Received message {}", id)
+                //logger.info("Received message {}", id)
 
                 if (command == 'EXIT' || command == 'STOP') {
                     logger.info('Received shutdown message, terminating Solr service')
                     synchronized(lock) { lock.notify() }
                 }
+                else if(command == 'PING') {
+                    String origin = message.getBody()
+                    logger.info('Received PING message from {}', origin)
+                    Message response = new Message()
+                    response.setCommand('PONG')
+                    response.setRoute([origin])
+                    po.send(response)
+                }
                 else {
-                    logger.info("Generating query from Message {}", id)
+                    logger.info("Generating query from received Message {}", id)
                     Query query = Serializer.parse(Serializer.toJson(message.body), Query)
 
                     logger.info("Gathering solr documents")
