@@ -15,7 +15,7 @@
     <name>AskMe Solr</name>
     <description>Solr document retreival service.</description>
     <build>
-        <finalName>solr</finalName>
+        <finalName>service</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
