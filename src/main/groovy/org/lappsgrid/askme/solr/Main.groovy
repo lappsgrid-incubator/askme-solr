@@ -1,6 +1,6 @@
 package org.lappsgrid.askme.solr
 
-import org.lappsgrid.eager.mining.api.Query
+import org.lappsgrid.askme.core.api.Query
 import org.lappsgrid.rabbitmq.topic.MailBox
 import org.lappsgrid.serialization.Serializer
 import org.lappsgrid.rabbitmq.Message
