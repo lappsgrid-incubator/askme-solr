@@ -1,11 +1,11 @@
 package org.lappsgrid.eager.askme.solr
 
-import org.lappsgrid.eager.mining.api.Query
+import org.lappsgrid.askme.core.api.Query
 import org.lappsgrid.rabbitmq.Message
 import org.lappsgrid.rabbitmq.topic.MessageBox
 import org.lappsgrid.rabbitmq.topic.PostOffice
 import groovy.util.logging.Slf4j
-import org.lappsgrid.eager.mining.core.json.Serializer
+import org.lappsgrid.serialization.Serializer
 
 
 @Slf4j("logger")
