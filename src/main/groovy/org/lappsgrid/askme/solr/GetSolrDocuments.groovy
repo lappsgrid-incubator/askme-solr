@@ -8,7 +8,7 @@ import org.apache.solr.common.SolrDocumentList
 import org.apache.solr.common.params.MapSolrParams
 
 
-import org.lappsgrid.eager.mining.api.Query
+import org.lappsgrid.askme.core.api.Query
 
 @Slf4j("logger")
 class GetSolrDocuments {
