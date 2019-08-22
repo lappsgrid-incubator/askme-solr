@@ -1,5 +1,6 @@
 package org.lappsgrid.askme.solr
 
+import org.lappsgrid.askme.core.Configuration
 import org.lappsgrid.askme.core.api.Query
 import org.lappsgrid.rabbitmq.topic.MailBox
 import org.lappsgrid.serialization.Serializer
@@ -17,16 +18,16 @@ import groovy.util.logging.Slf4j
 class Main{
     static final String MBOX = 'solr.mailbox'
     static final String WEB_MBOX = 'web.mailbox'
-    static final String HOST = "rabbitmq.lappsgrid.org"
-    static final String EXCHANGE = "org.lappsgrid.query"
-    static final PostOffice po = new PostOffice(EXCHANGE, HOST)
+
+    static final Configuration config = new Configuration()
+    final PostOffice po = new PostOffice(config.EXCHANGE, config.HOST)
     MailBox box
 
     Main() {
     }
 
     void run(lock) {
-        box = new MailBox(EXCHANGE, MBOX, HOST) {
+        box = new MailBox(config.EXCHANGE, MBOX, config.HOST) {
             @Override
             void recv(String s) {
                 Message message = Serializer.parse(s, Message)
@@ -38,14 +39,13 @@ class Main{
                     synchronized(lock) { lock.notify() }
                 }
                 else if(command == 'PING') {
-                    String origin = message.getBody()
-                    logger.info('Received PING message from and sending response back to {}', origin)
+                    logger.info('Received PING message from and sending response back to {}', message.route[0])
                     Message response = new Message()
                     response.setBody(MBOX)
                     response.setCommand('PONG')
-                    response.setRoute([origin])
-                    po.send(response)
-                    logger.info('Response PONG sent to {}', origin)
+                    response.setRoute(message.route)
+                    logger.info('Response PONG sent to {}', response.route[0])
+                    Main.this.po.send(response)
                 }
                 else {
                     logger.info('Received Message {}', id)

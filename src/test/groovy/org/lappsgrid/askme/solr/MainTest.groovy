@@ -19,13 +19,11 @@ class MainTest {
     static Configuration config
     Main app
     Object lock
-    final String MAILBOX = "query-test-mailbox"
+    final String MAILBOX = "solr-test-mailbox"
 
     @BeforeClass
     static void init() {
         config = new Configuration()
-        System.setProperty(RabbitMQ.USERNAME_PROPERTY, config.USERNAME)
-        System.setProperty(RabbitMQ.PASSWORD_PROPERTY, config.PASSWORD)
     }
 
     @Before
@@ -65,7 +63,7 @@ class MainTest {
         println "creating the message"
         Message message = new Message()
                 .command("PING")
-                .route(Main.BOX)
+                .route(Main.MBOX)
                 .route(MAILBOX)
         println "Sending the message"
         po.send(message)
