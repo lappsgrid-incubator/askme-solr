@@ -63,7 +63,7 @@ class MainTest {
         println "creating the message"
         Message message = new Message()
                 .command("PING")
-                .route(Main.MBOX)
+                .route(Main.config.SOLR_MBOX)
                 .route(MAILBOX)
         println "Sending the message"
         po.send(message)

@@ -42,7 +42,7 @@ class GetSolrDocuments {
         solrParams.rows = rows
         MapSolrParams queryParams = new MapSolrParams(solrParams)
 
-        logger.info("Sending query to Solr")
+        logger.info("Sending query to Solr: {}", query.query)
         final QueryResponse response = solr.query(collection, queryParams)
         final SolrDocumentList documents = response.getResults()
         int n = documents.size()

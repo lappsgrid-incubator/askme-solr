@@ -1,5 +1,7 @@
 package org.lappsgrid.askme.solr
 
+import groovy.transform.CompileStatic
+import groovy.transform.TypeChecked
 import org.lappsgrid.askme.core.Configuration
 import org.lappsgrid.askme.core.api.Query
 import org.lappsgrid.rabbitmq.topic.MailBox
@@ -13,13 +15,11 @@ import groovy.util.logging.Slf4j
  * 1) Update imports to phase out eager (waiting on askme-core pom)
  * 2) Add exceptions / case statements to recv method?
  */
-
+@CompileStatic
 @Slf4j("logger")
 class Main{
-    static final String MBOX = 'solr.mailbox'
-    static final String WEB_MBOX = 'web.mailbox'
-
     static final Configuration config = new Configuration()
+
     final PostOffice po = new PostOffice(config.EXCHANGE, config.HOST)
     MailBox box
 
@@ -27,13 +27,12 @@ class Main{
     }
 
     void run(lock) {
-        box = new MailBox(config.EXCHANGE, MBOX, config.HOST) {
+        box = new MailBox(config.EXCHANGE, 'solr.mailbox', config.HOST) {
             @Override
             void recv(String s) {
                 Message message = Serializer.parse(s, Message)
                 String command = message.getCommand()
                 String id = message.getId()
-                Object params = message.getParameters()
                 if (command == 'EXIT' || command == 'STOP') {
                     logger.info('Received shutdown message, terminating Solr service')
                     synchronized(lock) { lock.notify() }
@@ -41,7 +40,7 @@ class Main{
                 else if(command == 'PING') {
                     logger.info('Received PING message from and sending response back to {}', message.route[0])
                     Message response = new Message()
-                    response.setBody(MBOX)
+                    response.setBody('solr.mailbox')
                     response.setCommand('PONG')
                     response.setRoute(message.route)
                     logger.info('Response PONG sent to {}', response.route[0])
@@ -50,20 +49,20 @@ class Main{
                 else {
                     logger.info('Received Message {}', id)
                     logger.info("Generating query from received Message {}", id)
-                    Query query = Serializer.parse(Serializer.toJson(message.body), Query)
-                    logger.info("Gathering solr documents")
+                    String destination = message.route[0] ?: 'the void'
+                    //TODO if the query has not been set we should return an errro message
+                    // as otherwise we will eventually get a NPE.
+                    String json = message.get("query")
+                    Query query = Serializer.parse(json, Query)
+                    logger.info("Gathering solr documents for query '{}'", query.query)
                     GetSolrDocuments process = new GetSolrDocuments()
-                    int number_of_documents = command.toInteger()
-                    Map result = process.answer(query, id, number_of_documents)
-                    logger.info("Processed query from Message {}, sending documents back to web",id)
-                    Message response = new Message()
-                    response.setCommand('solr')
-                    response.setRoute([WEB_MBOX])
-                    response.setBody(result)
-                    response.setId(id)
-                    response.setParameters(params)
-                    po.send(response)
-                    logger.info("Message {} with solr documents sent back to web", id)
+                    //FIXME The number of documents should be obtained from the params.
+                    int nDocuments = 100
+                    Map result = process.answer(query, id, nDocuments)
+                    logger.info("Processed query from Message {}",id)
+                    message.setBody(result)
+                    po.send(message)
+                    logger.info("Message {} with solr documents sent to {}", id, destination)
                 }
             }
         }
