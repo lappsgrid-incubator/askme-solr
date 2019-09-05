@@ -24,6 +24,8 @@ class Main{
     MailBox box
 
     Main() {
+        println config.EXCHANGE
+        println config.HOST
     }
 
     void run(lock) {
@@ -60,8 +62,8 @@ class Main{
                     int nDocuments = 100
                     Map result = process.answer(query, id, nDocuments)
                     logger.info("Processed query from Message {}",id)
-                    message.setBody(result)
-                    po.send(message)
+                    message.setBody(Serializer.toJson(result))
+                    Main.this.po.send(message)
                     logger.info("Message {} with solr documents sent to {}", id, destination)
                 }
             }
