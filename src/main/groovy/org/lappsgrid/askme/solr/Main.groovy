@@ -20,15 +20,23 @@ import groovy.util.logging.Slf4j
 class Main{
     static final Configuration config = new Configuration()
 
-    final PostOffice po = new PostOffice(config.EXCHANGE, config.HOST)
+    final PostOffice po
     MailBox box
 
     Main() {
-        println config.EXCHANGE
-        println config.HOST
+        logger.info("Exchange: {}", config.EXCHANGE)
+        logger.info("Host: {}", config.HOST)
+        try {
+            po = new PostOffice(config.EXCHANGE, config.HOST)
+        }
+        catch (Exception e) {
+            logger.error("Unable to construct application.", e)
+        }
     }
 
-    void run(lock) {
+    void run() {
+        Object lock = new Object()
+        logger.info("Running.")
         box = new MailBox(config.EXCHANGE, 'solr.mailbox', config.HOST) {
             @Override
             void recv(String s) {
@@ -62,7 +70,8 @@ class Main{
                     int nDocuments = 100
                     Map result = process.answer(query, id, nDocuments)
                     logger.info("Processed query from Message {}",id)
-                    message.setBody(Serializer.toJson(result))
+//                    message.setBody(Serializer.toJson(result))
+                    message.body = result
                     Main.this.po.send(message)
                     logger.info("Message {} with solr documents sent to {}", id, destination)
                 }
@@ -73,11 +82,11 @@ class Main{
         box.close()
         logger.info("Solr service terminated")
     }
+
     static void main(String[] args) {
         logger.info("Starting Solr service")
-        Object lock = new Object()
         Thread.start {
-            new Main().run(lock)
+            new Main().run()
         }
     }
 
