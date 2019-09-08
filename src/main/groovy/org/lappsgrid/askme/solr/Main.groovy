@@ -2,8 +2,13 @@ package org.lappsgrid.askme.solr
 
 import groovy.transform.CompileStatic
 import groovy.transform.TypeChecked
+import org.apache.solr.common.SolrDocument
 import org.lappsgrid.askme.core.Configuration
+import org.lappsgrid.askme.core.api.AskmeMessage
+import org.lappsgrid.askme.core.api.Packet
 import org.lappsgrid.askme.core.api.Query
+import org.lappsgrid.askme.core.model.Document
+import org.lappsgrid.askme.core.model.Section
 import org.lappsgrid.rabbitmq.topic.MailBox
 import org.lappsgrid.serialization.Serializer
 import org.lappsgrid.rabbitmq.Message
@@ -22,12 +27,14 @@ class Main{
 
     final PostOffice po
     MailBox box
+    Stanford nlp
 
     Main() {
         logger.info("Exchange: {}", config.EXCHANGE)
         logger.info("Host: {}", config.HOST)
         try {
             po = new PostOffice(config.EXCHANGE, config.HOST)
+            nlp = new Stanford()
         }
         catch (Exception e) {
             logger.error("Unable to construct application.", e)
@@ -40,7 +47,7 @@ class Main{
         box = new MailBox(config.EXCHANGE, 'solr.mailbox', config.HOST) {
             @Override
             void recv(String s) {
-                Message message = Serializer.parse(s, Message)
+                AskmeMessage message = Serializer.parse(s, AskmeMessage)
                 String command = message.getCommand()
                 String id = message.getId()
                 if (command == 'EXIT' || command == 'STOP') {
@@ -50,7 +57,7 @@ class Main{
                 else if(command == 'PING') {
                     logger.info('Received PING message from and sending response back to {}', message.route[0])
                     Message response = new Message()
-                    response.setBody('solr.mailbox')
+//                    response.setBody('solr.mailbox')
                     response.setCommand('PONG')
                     response.setRoute(message.route)
                     logger.info('Response PONG sent to {}', response.route[0])
@@ -62,16 +69,17 @@ class Main{
                     String destination = message.route[0] ?: 'the void'
                     //TODO if the query has not been set we should return an errro message
                     // as otherwise we will eventually get a NPE.
-                    String json = message.get("query")
-                    Query query = Serializer.parse(json, Query)
-                    logger.info("Gathering solr documents for query '{}'", query.query)
+//                    String json = message.get("query")
+                    Packet packet = message.body
+//                    Query query = packet.query //Serializer.parse(json, Query)
+                    logger.info("Gathering solr documents for query '{}'", packet.query.query)
                     GetSolrDocuments process = new GetSolrDocuments()
                     //FIXME The number of documents should be obtained from the params.
                     int nDocuments = 100
-                    Map result = process.answer(query, id, nDocuments)
+                    packet = process.answer(packet, id, nDocuments)
                     logger.info("Processed query from Message {}",id)
 //                    message.setBody(Serializer.toJson(result))
-                    message.body = result
+                    message.body = packet
                     Main.this.po.send(message)
                     logger.info("Message {} with solr documents sent to {}", id, destination)
                 }

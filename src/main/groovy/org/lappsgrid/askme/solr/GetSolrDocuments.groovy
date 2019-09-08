@@ -4,11 +4,13 @@ import groovy.util.logging.Slf4j
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.impl.CloudSolrClient
 import org.apache.solr.client.solrj.response.QueryResponse
+import org.apache.solr.common.SolrDocument
 import org.apache.solr.common.SolrDocumentList
 import org.apache.solr.common.params.MapSolrParams
-
-
+import org.lappsgrid.askme.core.api.Packet
 import org.lappsgrid.askme.core.api.Query
+import org.lappsgrid.askme.core.model.Document
+import org.lappsgrid.askme.core.model.Section
 
 @Slf4j("logger")
 class GetSolrDocuments {
@@ -26,11 +28,12 @@ class GetSolrDocuments {
     final String fl = 'id,pmid,pmc,doi,year,title,path,abstract,body'
 
 
-    Map answer(Query query, String id, int number_of_documents) {
+    Packet answer(Packet packet, String id, int number_of_documents) {
 
         logger.info("Generating answer for Message {}", id)
         logger.info("Creating CloudSolrClient")
         SolrClient solr = new CloudSolrClient.Builder([solr_address]).build()
+        Query query = packet.query
 
         logger.info("Generating solr parameters")
         Map solrParams = [:]
@@ -44,15 +47,25 @@ class GetSolrDocuments {
 
         logger.info("Sending query to Solr: {}", query.query)
         final QueryResponse response = solr.query(collection, queryParams)
-        final SolrDocumentList documents = response.getResults()
-        int n = documents.size()
-
-        logger.info("Received {} documents", n)
-        Map result = [:]
-        result.query = query
-        result.size = n
-        result.documents = documents
         solr.close()
-        return result
+        final SolrDocumentList documents = response.getResults()
+
+        logger.info("Received {} documents", documents.size())
+        packet.documents = documents.collect{ createDocument(it) }
+        return packet
     }
+
+    Document createDocument(SolrDocument solr){
+        Document document = new Document()
+        ['id', 'pmid', 'pmc', 'doi', 'year', 'path'].each { field ->
+            document.setProperty(field, solr.getFieldValue(field))
+        }
+        Section title = nlp.process(solr.getFieldValue('title').toString())
+        document.setProperty('title', title)
+        Section abs = nlp.process(solr.getFieldValue('abstract').toString())
+        document.setProperty('articleAbstract', abs)
+        return document
+    }
+
+
 }
