@@ -28,11 +28,10 @@ class MainTest {
 
     @Before
     void setup() {
-        lock = new Object()
         app = new Main()
         Thread.start {
             println "Running the app"
-            app.run(lock)
+            app.run()
         }
         println "Setup complete."
     }

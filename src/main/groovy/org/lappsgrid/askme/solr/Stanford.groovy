@@ -1,5 +1,10 @@
 package org.lappsgrid.askme.solr
 
+import edu.stanford.nlp.ling.CoreLabel
+import edu.stanford.nlp.pipeline.CoreDocument
+import edu.stanford.nlp.pipeline.CoreSentence
+import edu.stanford.nlp.pipeline.StanfordCoreNLP
+import edu.stanford.nlp.util.Pair
 import org.lappsgrid.askme.core.model.Section
 import org.lappsgrid.askme.core.model.Sentence
 import org.lappsgrid.askme.core.model.Token

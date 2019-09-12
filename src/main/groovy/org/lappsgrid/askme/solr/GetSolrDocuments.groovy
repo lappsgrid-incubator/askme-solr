@@ -23,31 +23,37 @@ class GetSolrDocuments {
      */
 
     int rows = 10
-    final String solr_address = "http://129.114.16.34:8983/solr"
-    final String collection = 'bioqa'
-    final String fl = 'id,pmid,pmc,doi,year,title,path,abstract,body'
+    static final String solr_address = "http://129.114.16.34:8983/solr"
+    static final String collection = 'bioqa'
+    static final String fl = 'id,pmid,pmc,doi,year,title,path,abstract,body'
+    final Stanford nlp
+    final SolrClient solr
 
+    GetSolrDocuments() {
+        nlp = new Stanford()
+        logger.info("Creating CloudSolrClient")
+        solr = new CloudSolrClient.Builder([solr_address]).build()
+    }
 
-    Packet answer(Packet packet, String id, int number_of_documents) {
+    Packet answer(Packet packet, String id) { //}, int number_of_documents) {
 
         logger.info("Generating answer for Message {}", id)
-        logger.info("Creating CloudSolrClient")
-        SolrClient solr = new CloudSolrClient.Builder([solr_address]).build()
+
         Query query = packet.query
 
         logger.info("Generating solr parameters")
         Map solrParams = [:]
         solrParams.q = query.query
         solrParams.fl = fl
-        if(number_of_documents){
-            rows = number_of_documents
-        }
-        solrParams.rows = rows
+//        if(number_of_documents){
+//            rows = number_of_documents
+//        }
+        solrParams.rows = query.count ?: 100
         MapSolrParams queryParams = new MapSolrParams(solrParams)
 
         logger.info("Sending query to Solr: {}", query.query)
         final QueryResponse response = solr.query(collection, queryParams)
-        solr.close()
+//        solr.close()
         final SolrDocumentList documents = response.getResults()
 
         logger.info("Received {} documents", documents.size())
@@ -60,10 +66,10 @@ class GetSolrDocuments {
         ['id', 'pmid', 'pmc', 'doi', 'year', 'path'].each { field ->
             document.setProperty(field, solr.getFieldValue(field))
         }
-        Section title = nlp.process(solr.getFieldValue('title').toString())
-        document.setProperty('title', title)
-        Section abs = nlp.process(solr.getFieldValue('abstract').toString())
-        document.setProperty('articleAbstract', abs)
+        document.title = nlp.process(solr.getFieldValue('title').toString())
+//        document.setProperty('title', title)
+        document.articleAbstract = nlp.process(solr.getFieldValue('abstract').toString())
+//        document.setProperty('articleAbstract', abs)
         return document
     }
 

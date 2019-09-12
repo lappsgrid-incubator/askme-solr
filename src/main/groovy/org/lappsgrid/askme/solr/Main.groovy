@@ -1,19 +1,14 @@
 package org.lappsgrid.askme.solr
 
 import groovy.transform.CompileStatic
-import groovy.transform.TypeChecked
-import org.apache.solr.common.SolrDocument
+import groovy.util.logging.Slf4j
 import org.lappsgrid.askme.core.Configuration
 import org.lappsgrid.askme.core.api.AskmeMessage
 import org.lappsgrid.askme.core.api.Packet
-import org.lappsgrid.askme.core.api.Query
-import org.lappsgrid.askme.core.model.Document
-import org.lappsgrid.askme.core.model.Section
-import org.lappsgrid.rabbitmq.topic.MailBox
-import org.lappsgrid.serialization.Serializer
 import org.lappsgrid.rabbitmq.Message
+import org.lappsgrid.rabbitmq.topic.MailBox
 import org.lappsgrid.rabbitmq.topic.PostOffice
-import groovy.util.logging.Slf4j
+import org.lappsgrid.serialization.Serializer
 
 /**
  * TODO:
@@ -28,6 +23,7 @@ class Main{
     final PostOffice po
     MailBox box
     Stanford nlp
+    GetSolrDocuments process
 
     Main() {
         logger.info("Exchange: {}", config.EXCHANGE)
@@ -35,6 +31,7 @@ class Main{
         try {
             po = new PostOffice(config.EXCHANGE, config.HOST)
             nlp = new Stanford()
+            process = new GetSolrDocuments()
         }
         catch (Exception e) {
             logger.error("Unable to construct application.", e)
@@ -70,17 +67,19 @@ class Main{
                     //TODO if the query has not been set we should return an errro message
                     // as otherwise we will eventually get a NPE.
 //                    String json = message.get("query")
-                    Packet packet = message.body
+                    Packet packet = (Packet) message.body
 //                    Query query = packet.query //Serializer.parse(json, Query)
                     logger.info("Gathering solr documents for query '{}'", packet.query.query)
-                    GetSolrDocuments process = new GetSolrDocuments()
+//                    GetSolrDocuments process = new GetSolrDocuments()
                     //FIXME The number of documents should be obtained from the params.
-                    int nDocuments = 100
-                    packet = process.answer(packet, id, nDocuments)
+//                    int nDocuments = message.get("count") ?: 100
+                    message.body = process.answer(packet, id) //, nDocuments)
                     logger.info("Processed query from Message {}",id)
 //                    message.setBody(Serializer.toJson(result))
-                    message.body = packet
+//                    message.body = packet
+                    new File('/tmp/message.json').text = Serializer.toPrettyJson(message)
                     Main.this.po.send(message)
+                    new File('/tmp/message2.json').text = Serializer.toPrettyJson(message)
                     logger.info("Message {} with solr documents sent to {}", id, destination)
                 }
             }
