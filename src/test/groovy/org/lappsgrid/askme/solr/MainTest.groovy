@@ -15,7 +15,7 @@ import org.lappsgrid.rabbitmq.topic.PostOffice
  *
  */
 @Ignore
-class MainTest {
+class  MainTest {
     static Configuration config
     Main app
     Object lock

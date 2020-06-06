@@ -60,6 +60,27 @@ class Main{
                     logger.info('Response PONG sent to {}', response.route[0])
                     Main.this.po.send(response)
                 }
+                else if (command == 'CORE') {
+                    String core = message.body?.message
+                    Message response = new Message()
+                    response.setRoute(message.route)
+                    if (core != null) {
+                        int n = process.changeCollection(core)
+                        if (n >= 0) {
+                            response.command("ok")
+                                .set("numDocs", Integer.toString(n))
+                        }
+                        else {
+                            response.command("error")
+                                .set("message", "Unable to switch to core $core.")
+
+                        }
+                    }
+                    else {
+                        message.command('error').set('message', 'No such core.')
+                    }
+                    Main.this.po.send(response);
+                }
                 else {
                     logger.info('Received Message {}', id)
                     logger.info("Generating query from received Message {}", id)
