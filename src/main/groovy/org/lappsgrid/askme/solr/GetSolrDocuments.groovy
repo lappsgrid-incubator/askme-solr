@@ -37,7 +37,7 @@ class GetSolrDocuments {
 
     GetSolrDocuments() {
         nlp = new Stanford()
-        logger.info("Creating CloudSolrClient")
+        logger.info("Creating Solr client")
 //        solr = new CloudSolrClient.Builder([solr_address]).build()
         solr = new HttpSolrClient.Builder(solr_address).build()
     }
@@ -86,7 +86,7 @@ class GetSolrDocuments {
         logger.info("Sending query to Solr: {}", query.query)
         QueryResponse response = null
         try {
-            response = solr.query(collection, queryParams)
+            response = solr.query(packet.core, queryParams)
         }
         catch (Exception e) {
             packet.status = Status.ERROR

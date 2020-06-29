@@ -2,9 +2,19 @@ package org.lappsgrid.askme.solr
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.Timer
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.lappsgrid.askme.core.Configuration
 import org.lappsgrid.askme.core.api.AskmeMessage
 import org.lappsgrid.askme.core.api.Packet
+import org.lappsgrid.askme.core.metrics.Tags
 import org.lappsgrid.rabbitmq.Message
 import org.lappsgrid.rabbitmq.topic.MailBox
 import org.lappsgrid.rabbitmq.topic.PostOffice
@@ -25,25 +35,46 @@ class Main{
     Stanford nlp
     GetSolrDocuments process
 
+    final PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+
+    Counter documentsFetched
+    Counter messagesReceived
+    Timer timer
+
     Main() {
         logger.info("Exchange: {}", config.EXCHANGE)
         logger.info("Host: {}", config.HOST)
+        logger.info("Address: {}", config.SOLR_MBOX)
         try {
             po = new PostOffice(config.EXCHANGE, config.HOST)
             nlp = new Stanford()
             process = new GetSolrDocuments()
+            init()
         }
         catch (Exception e) {
             logger.error("Unable to construct application.", e)
         }
     }
 
+    void init() {
+
+        new ClassLoaderMetrics().bindTo(registry)
+        new JvmMemoryMetrics().bindTo(registry)
+        new JvmGcMetrics().bindTo(registry)
+        new ProcessorMetrics().bindTo(registry)
+        new JvmThreadMetrics().bindTo(registry)
+        documentsFetched = registry.counter("documents_fetched", "service", Tags.SOLR)
+        messagesReceived = registry.counter("messages", "service", Tags.SOLR)
+        timer = registry.timer("solr_query_times")
+    }
+
     void run() {
         Object lock = new Object()
         logger.info("Running.")
-        box = new MailBox(config.EXCHANGE, 'solr.mailbox', config.HOST) {
+        box = new MailBox(config.EXCHANGE, config.SOLR_MBOX, config.HOST) {
             @Override
             void recv(String s) {
+                messagesReceived.increment()
                 AskmeMessage message = Serializer.parse(s, AskmeMessage)
                 String command = message.getCommand()
                 String id = message.getId()
@@ -54,15 +85,17 @@ class Main{
                 else if(command == 'PING') {
                     logger.info('Received PING message from and sending response back to {}', message.route[0])
                     Message response = new Message()
-//                    response.setBody('solr.mailbox')
+                    response.id = message.id
                     response.setCommand('PONG')
                     response.setRoute(message.route)
                     logger.info('Response PONG sent to {}', response.route[0])
                     Main.this.po.send(response)
                 }
                 else if (command == 'CORE') {
+                    logger.info("CORE command received")
                     String core = message.body?.message
                     Message response = new Message()
+                    response.id = message.id
                     response.setRoute(message.route)
                     if (core != null) {
                         int n = process.changeCollection(core)
@@ -81,27 +114,29 @@ class Main{
                     }
                     Main.this.po.send(response);
                 }
+                else if (command == 'METRICS') {
+                    Message response = new Message()
+                    response.id = message.id
+                    response.setCommand('ok')
+                    response.body(registry.scrape())
+                    response.route = message.route
+                    logger.trace('Metrics sent to {}', response.route[0])
+                    Main.this.po.send(response)
+                }
                 else {
                     logger.info('Received Message {}', id)
-                    logger.info("Generating query from received Message {}", id)
                     String destination = message.route[0] ?: 'the void'
-                    //TODO if the query has not been set we should return an errro message
-                    // as otherwise we will eventually get a NPE.
-//                    String json = message.get("query")
                     Packet packet = (Packet) message.body
-//                    Query query = packet.query //Serializer.parse(json, Query)
                     logger.info("Gathering solr documents for query '{}'", packet.query.query)
-//                    GetSolrDocuments process = new GetSolrDocuments()
-                    //FIXME The number of documents should be obtained from the params.
-//                    int nDocuments = message.get("count") ?: 100
-                    message.body = process.answer(packet, id) //, nDocuments)
-                    logger.info("Processed query from Message {}",id)
-//                    message.setBody(Serializer.toJson(result))
-//                    message.body = packet
-                    new File('/tmp/message.json').text = Serializer.toPrettyJson(message)
+                    message.body = timer.recordCallable {
+                        return process.answer(packet, id) //, nDocuments)
+                    }
+                    logger.trace("Processed query from Message {}",id)
+                    if (packet.documents && packet.documents.size() > 0) {
+                        documentsFetched.increment(packet.documents.size())
+                    }
                     Main.this.po.send(message)
-                    new File('/tmp/message2.json').text = Serializer.toPrettyJson(message)
-                    logger.info("Message {} with solr documents sent to {}", id, destination)
+                    logger.debug("Message {} with solr documents sent to {}", id, destination)
                 }
             }
         }
